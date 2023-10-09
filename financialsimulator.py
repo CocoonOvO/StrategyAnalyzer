@@ -19,6 +19,7 @@ class FinancialSimulator():
         self.analyzers:map[str,BaseAnalyzer] = {}
         self.set_model(price_model)
         self.loop = 0
+        self.debug = debug
     
     def add_analyzer(self,name:str,analyzer:BaseAnalyzer):
         self.analyzers[name]=analyzer
@@ -40,7 +41,7 @@ class FinancialSimulator():
     def main(self):
         while not self.checkout():
             self.loop += 1
-            if self.loop%10 == 0:
+            if self.loop%10 == 0 and self.debug:
                 print('当前循环第{}次'.format(self.loop))
             if self.loop >= 100000:
                 break

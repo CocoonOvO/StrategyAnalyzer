@@ -11,7 +11,7 @@ class BaseAnalyzer(ABC):
         self.count_list = [self.incount]
         self.buy_count = 0
         self.sell_count = 0
-    
+
     def buy(self,count,price):
         total_price = count*price
         if total_price > self.wealth:
