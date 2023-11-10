@@ -5,20 +5,22 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.sans-serif'] = ['SimHei']  # 设置默认字体为黑体
 plt.rcParams['axes.unicode_minus'] = False  # 设置正常显示负号
 
-from baseanalyzer import BaseAnalyzer
+from baseanalyzer import BaseAnalyzer,Post
+
 
 class FinancialSimulator():
     
     def set_model(self,price_model:Callable[['FinancialSimulator'],float]):
         self.price_model = price_model
 
-    def __init__(self,base_price,price_model:Callable[['FinancialSimulator'],float], debug = False):
+    def __init__(self,base_price,price_model:Callable[['FinancialSimulator'],float],post_fet:float = 0,debug = False):
         self.base_price = base_price
         self.price = base_price
         self.price_list = [self.price]
         self.analyzers:map[str,BaseAnalyzer] = {}
         self.set_model(price_model)
         self.loop = 0
+        self.post_fet = post_fet
         self.debug = debug
     
     def add_analyzer(self,name:str,analyzer:BaseAnalyzer):
@@ -33,6 +35,16 @@ class FinancialSimulator():
             price = max(0,price)
             self.sell_all()
             return True
+        # 先处理挂单的逻辑
+        for name,analyzer in self.analyzers.items():
+            for post in analyzer.posts:
+                if post.type==Post.SELL and post.price<=price:
+                    analyzer.sell(post.count,price,self.post_fet)
+                    analyzer.remove(post)
+                elif post.type==Post.BUY and post.price>=price:
+                    analyzer.buy(post.count,price,self.post_fet)
+                    analyzer.remove(post)
+        # 分析者结算, 此时挂单已经结算
         for name,analyzer in self.analyzers.items():
             if not analyzer.end:
                 analyzer.analyze(price)
@@ -50,6 +62,7 @@ class FinancialSimulator():
     def sell_all(self):
         for n, a in self.analyzers.items():
             a.sell(a.incount,self.price)
+            a.posts = []
     
     def print_statistics(self):
         print("模拟过程中金融产品的价格变化情况：")
